@@ -207,6 +207,34 @@ const ImpactMap = () => {
           </svg>
         </div>
 
+        {/* Mobile fallback — vertical flow */}
+        <div className="cy-impact-mobile">
+          {[
+            { num: "01", title: "Strategy",  layer: 0, dot: "s0" },
+            { num: "02", title: "Systems",   layer: 1, dot: "s1" },
+            { num: "03", title: "Outcomes",  layer: 2, dot: "s2" },
+          ].map((col, ci) => (
+            <div key={ci} className="cy-impact-mob-col">
+              <div className="cy-impact-mob-h">
+                <span className="cy-impact-mob-num">{col.num}</span>
+                <span className="cy-impact-mob-title">{col.title}</span>
+              </div>
+              <ul className="cy-impact-mob-list">
+                {IMPACT_NODES.filter(n => n.layer === col.layer).map(n => (
+                  <li key={n.id} className="cy-impact-mob-item">
+                    <span className={"cy-impact-dot " + col.dot} />
+                    <div>
+                      <div className="cy-impact-mob-label">{n.label}</div>
+                      <div className="cy-impact-mob-sub">{n.sub}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {ci < 2 && <div className="cy-impact-mob-arrow">↓</div>}
+            </div>
+          ))}
+        </div>
+
         <div className="cy-impact-footnote cy-mono">
           ↳ this map reads left-to-right: a strategic decision flows through the systems it produced and lands on the people it served.
         </div>

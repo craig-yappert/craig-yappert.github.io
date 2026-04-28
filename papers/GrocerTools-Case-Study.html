@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>GrocerTools — Case Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0e1016;
+    --paper: #faf7f1;
+    --paper-2: #4a4742;
+    --paper-3: #6f6c66;
+    --line: #d9d4c8;
+    --line-soft: #ece8de;
+    --accent-green: oklch(0.55 0.11 165);
+    --accent-amber: oklch(0.62 0.15 60);
+  }
+  @page { size: letter; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #ddd; }
+  body {
+    font-family: "Inter Tight", system-ui, sans-serif;
+    color: var(--ink);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .page {
+    width: 8.5in; min-height: 11in;
+    margin: 0 auto; padding: 0.6in 0.7in 0.85in;
+    background: var(--paper);
+    page-break-after: always;
+    position: relative;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  .head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    border-bottom: 1px solid var(--ink);
+    padding-bottom: 14px;
+  }
+  .mark {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  }
+  .mark .dot {
+    display:inline-block; width:8px;height:8px;border-radius:50%;
+    background: var(--accent-green); margin-right:8px; vertical-align:middle;
+  }
+  .meta {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--paper-3); text-align: right;
+  }
+
+  h1 {
+    font-family: "Fraunces", serif; font-weight: 400;
+    font-size: 52px; line-height: 1.0; letter-spacing: -0.02em;
+    margin: 36px 0 6px;
+  }
+  h1 em { font-style: italic; color: var(--accent-green); }
+  .sub {
+    font-family: "Fraunces", serif; font-style: italic; font-weight: 300;
+    font-size: 20px; color: var(--paper-2); margin: 0 0 28px;
+  }
+
+  h2 {
+    font-family: "Fraunces", serif; font-weight: 400;
+    font-size: 24px; letter-spacing: -0.01em;
+    margin: 28px 0 10px;
+  }
+  h2::before {
+    content: ""; display: inline-block; width: 22px; height: 1px;
+    background: var(--accent-green); vertical-align: middle;
+    margin-right: 12px; transform: translateY(-4px);
+  }
+  h3 {
+    font-family: "Fraunces", serif; font-weight: 400;
+    font-size: 18px; letter-spacing: -0.005em;
+    margin: 22px 0 6px;
+  }
+
+  p, li { font-size: 12.5px; line-height: 1.55; color: var(--paper-2); }
+  p { margin: 0 0 10px; }
+  p strong { color: var(--ink); font-weight: 500; }
+  ul { margin: 4px 0 12px; padding-left: 18px; }
+  ul li { margin: 3px 0; }
+
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--accent-green); margin-bottom: 4px;
+  }
+
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+              border: 1px solid var(--line); margin: 16px 0 8px; }
+  .stat-row .stat { padding: 12px 14px; border-right: 1px solid var(--line); }
+  .stat-row .stat:last-child { border-right: 0; }
+  .stat-v { font-family: "Fraunces", serif; font-size: 22px; line-height: 1; color: var(--ink); letter-spacing: -0.01em; }
+  .stat-k { font-family: "JetBrains Mono", monospace; font-size: 9px; letter-spacing: 0.14em;
+            text-transform: uppercase; color: var(--paper-3); margin-top: 6px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-size: 12px; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line-soft); }
+  th { font-family: "JetBrains Mono", monospace; font-size: 9px; letter-spacing: 0.14em;
+       text-transform: uppercase; color: var(--paper-3); border-bottom: 1px solid var(--ink); }
+
+  blockquote {
+    margin: 14px 0; padding: 4px 0 4px 18px;
+    border-left: 2px solid var(--accent-green);
+    font-family: "Fraunces", serif; font-style: italic; font-size: 14px;
+    color: var(--paper-2);
+  }
+
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+
+  .foot {
+    position: absolute; bottom: 0.4in; left: 0.7in; right: 0.7in;
+    display: flex; justify-content: space-between;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--paper-3);
+    border-top: 1px solid var(--line); padding-top: 8px;
+  }
+  .foot .pn::before { content: "Page "; }
+</style>
+</head>
+<body>
+
+<!-- ============ PAGE 1 — Cover ============ -->
+<div class="page">
+  <div class="head">
+    <div class="mark"><span class="dot"></span>GrocerTools · Case Study</div>
+    <div class="meta">v1.0 · February 2026<br/>Craig Yappert</div>
+  </div>
+
+  <div style="margin-top: 1.4in;">
+    <div class="eyebrow">03 — Featured Work</div>
+    <h1>The independent grocer<br/>has been <em>underserved</em> by software<br/>for too long.</h1>
+    <p class="sub">A focused, vertical SaaS for the stores that feed our communities.</p>
+  </div>
+
+  <div style="margin-top: 1in; padding-top: 24px; border-top: 1px solid var(--line);">
+    <div class="twocol">
+      <div>
+        <div class="eyebrow">Target user</div>
+        <p style="font-family: 'Fraunces', serif; font-size: 18px; color: var(--ink); margin: 4px 0 0;">
+          Independent and small-chain grocers — 1 to 5 locations, family-owned, specialty, ethnic markets.
+          The stores big SaaS skips past.
+        </p>
+      </div>
+      <div>
+        <div class="eyebrow">Intent</div>
+        <p style="font-family: 'Fraunces', serif; font-size: 18px; color: var(--ink); margin: 4px 0 0;">
+          Give independents the operational tooling chains have had for years —
+          at a price and complexity level that actually fits their business.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div>GrocerTools — Case Study</div>
+    <div>grocertools.com</div>
+  </div>
+</div>
+
+<!-- ============ PAGE 2 — Problem & opportunity ============ -->
+<div class="page">
+  <div class="head">
+    <div class="mark"><span class="dot"></span>01 · The problem</div>
+    <div class="meta">Death by a thousand paper cuts</div>
+  </div>
+
+  <h2>Stuck between enterprise overkill and clipboards</h2>
+  <p>
+    Walk into any major grocery chain and you'll see digital price displays, sophisticated inventory systems,
+    and operations powered by enterprise software. Walk into your neighborhood independent grocer, and you'll
+    likely see something different: handwritten sale signs, spreadsheets taped to clipboards, and managers
+    spending hours on tasks the chains automated years ago.
+  </p>
+  <p>
+    This isn't because independent grocers don't want better tools. It's because the tools built for grocery
+    retail have always been built for the giants — with price tags to match.
+  </p>
+
+  <div class="stat-row">
+    <div class="stat"><div class="stat-v">12,000 hrs</div><div class="stat-k">Yearly labor on manual tags</div></div>
+    <div class="stat"><div class="stat-v">2,000+</div><div class="stat-k">Weekly price changes (inflation)</div></div>
+    <div class="stat"><div class="stat-v">$100k+</div><div class="stat-k">Cost of enterprise ESL systems</div></div>
+    <div class="stat"><div class="stat-v">~0%</div><div class="stat-k">Independents tracking waste</div></div>
+  </div>
+
+  <h2>The real-world voices behind the numbers</h2>
+  <blockquote>
+    "I spend every Tuesday afternoon in the back office with Publisher, copying prices from a spreadsheet.
+    It takes 3–4 hours just to get our weekly specials ready."
+    <div style="font-family: 'JetBrains Mono', monospace; font-style: normal; font-size: 10px;
+                letter-spacing: 0.14em; text-transform: uppercase; color: var(--paper-3); margin-top: 6px;">
+      — Store Manager, Independent Grocer
+    </div>
+  </blockquote>
+  <blockquote>
+    "We walk the aisles with clipboards, writing down dates, then type everything into Excel.
+    By the time we're done, something else has probably expired."
+    <div style="font-family: 'JetBrains Mono', monospace; font-style: normal; font-size: 10px;
+                letter-spacing: 0.14em; text-transform: uppercase; color: var(--paper-3); margin-top: 6px;">
+      — Department Lead
+    </div>
+  </blockquote>
+  <blockquote>
+    "Honestly? We throw things away and move on. We know we're losing money, but tracking it feels
+    like one more thing we don't have time for."
+    <div style="font-family: 'JetBrains Mono', monospace; font-style: normal; font-size: 10px;
+                letter-spacing: 0.14em; text-transform: uppercase; color: var(--paper-3); margin-top: 6px;">
+      — Store Owner
+    </div>
+  </blockquote>
+
+  <h2>The opportunity</h2>
+  <p>
+    The grocery technology market has a blind spot. Vendors focus on the largest retailers with the deepest
+    pockets, leaving independent grocers with two bad choices: expensive overkill, or manual workarounds.
+    GrocerTools fills that gap with a third option — <strong>focused tools that solve specific problems,
+    priced for the stores that need them most.</strong>
+  </p>
+
+  <div class="foot">
+    <div>GrocerTools — Case Study</div>
+    <div class="pn">2 of 4</div>
+  </div>
+</div>
+
+<!-- ============ PAGE 3 — Solution ============ -->
+<div class="page">
+  <div class="head">
+    <div class="mark"><span class="dot"></span>02 · The solution</div>
+    <div class="meta">The bicycle, not the rocket ship</div>
+  </div>
+
+  <h2>Three tools that earn their place every week</h2>
+  <p>
+    Enterprise grocery platforms from Oracle and SAP are rocket ships — expensive, complex, designed for
+    chains with mission-control teams. GrocerTools is the bicycle. Three focused modules, no POS integration
+    required, no IT department needed, no months of setup.
+  </p>
+
+  <h3>Sale Card Generator — minutes, not hours</h3>
+  <p>
+    Upload weekly specials, pick a template, print. What consumed an afternoon now takes 30 minutes —
+    and the signs look better because they were designed specifically for grocery retail. Barcode scanning
+    from any device camera. Bulk import from Excel. Visual template builder with drag-and-drop placement.
+    Smart grid layout. Custom themes. Duplicate-and-update for next week's sale.
+  </p>
+  <p style="font-family: 'Fraunces', serif; font-style: italic; color: var(--ink);">
+    Time saved: 3+ hours per week. At $20/hour, that's $3,000+ per year returned to your team.
+  </p>
+
+  <h3>Expiration Tracker — stop reacting, start preventing</h3>
+  <p>
+    Staff enter products as they stock. The system organizes by department and location. Alerts fire 3, 5, or
+    7 days before expiration. Expiring items flow directly into sale-card creation for timely markdowns.
+    Products get sold, not thrown away. Items that can't be saved flow into Waste Management with a complete
+    lifecycle record.
+  </p>
+
+  <h3>Waste Management — see where the money goes</h3>
+  <p>
+    Every discarded item gets logged in seconds: product, quantity, reason, cost. Over time, patterns emerge.
+    A vendor's bread consistently expires before it sells. One cooler runs warm on weekends. The store loses
+    $800 a month in produce — half of it preventable with better rotation. Five clear categories, reports by
+    reason, location, and time period.
+  </p>
+
+  <h2>Tools that work together</h2>
+  <p>
+    GrocerTools isn't three disconnected apps. The modules feed into each other:
+  </p>
+  <table>
+    <tr><th>Step</th><th>Where it happens</th><th>Outcome</th></tr>
+    <tr><td>Track expiration dates</td><td>Expiration Tracker</td><td>See what's at risk</td></tr>
+    <tr><td>Create markdown cards</td><td>Sale Card Generator</td><td>Capture revenue at risk</td></tr>
+    <tr><td>Log what couldn't be saved</td><td>Waste Management</td><td>Spot patterns &amp; adjust ordering</td></tr>
+  </table>
+  <p>The cycle tightens over time — the same connected workflow large chains have had for years.</p>
+
+  <div class="foot">
+    <div>GrocerTools — Case Study</div>
+    <div class="pn">3 of 4</div>
+  </div>
+</div>
+
+<!-- ============ PAGE 4 — Outcomes & approach ============ -->
+<div class="page">
+  <div class="head">
+    <div class="mark"><span class="dot"></span>03 · Outcomes &amp; approach</div>
+    <div class="meta">Thinking big, executing small</div>
+  </div>
+
+  <h2>The ROI is obvious</h2>
+  <p>At <strong>$9.99/month</strong>, GrocerTools pays for itself many times over.</p>
+  <table>
+    <tr><th>Scenario</th><th>Annual savings</th><th>ROI</th></tr>
+    <tr><td>Save 2 hrs/week on sale cards ($20/hr)</td><td>$2,080</td><td>17×</td></tr>
+    <tr><td>Prevent 1 case of produce waste / month</td><td>$600</td><td>5×</td></tr>
+    <tr><td>Capture markdown revenue from expiring items</td><td>$1,000+</td><td>8×</td></tr>
+  </table>
+  <p>Most stores save 10–20× what they pay. The tool costs less than a single case of expired lettuce.</p>
+
+  <h2>Designed for adoption, not just procurement</h2>
+  <div class="why" style="display:grid; grid-template-columns: 1fr 1fr; gap: 6px 28px;">
+    <p><strong>Solves one problem well.</strong> Staff don't have time to learn complex systems.</p>
+    <p><strong>Works with existing processes.</strong> No ripping out what already works.</p>
+    <p><strong>Value on day one.</strong> Sign up in the morning, print sale cards by lunch.</p>
+    <p><strong>No IT department required.</strong> If it needs technical support, it won't get used.</p>
+    <p><strong>Mobile-first.</strong> Tablet on the floor, phone at receiving.</p>
+    <p><strong>Affordable.</strong> The investment must make sense for a small operation.</p>
+  </div>
+
+  <h2>Why this work matters to me</h2>
+  <p>
+    Independent grocers are a vital part of local communities. They provide jobs, serve neighborhoods big
+    chains skip, sponsor Little League teams, and cash checks for regulars. They deserve the same operational
+    tooling the chains have had for a decade — at a price they can actually pay.
+  </p>
+  <p>
+    GrocerTools is a thesis bet: that vertical, purpose-built SaaS for underserved markets is a better
+    business than yet another horizontal platform. The same thesis sits behind everything else I'm building —
+    affordable-housing CRM, volunteer fire-department RMS, civic POCs. Big intent, focused execution.
+  </p>
+
+  <h2>Get involved</h2>
+  <p>
+    First 50 stores get one full year free, no credit card required. Their feedback shapes the product.
+    Their success proves the thesis. After the early-adopter program: $9.99/month, cancel anytime,
+    no per-user fees, no contracts.
+  </p>
+
+  <div style="margin-top: 28px; padding: 18px 22px; background: var(--ink); color: var(--paper);">
+    <div style="font-family: 'Fraunces', serif; font-size: 18px; letter-spacing: -0.01em;">
+      Ready to see what simple tools can do for your store?
+    </div>
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em;
+                text-transform: uppercase; color: var(--accent-amber); margin-top: 8px;">
+      → grocertools.com  ·  support@grocertools.com
+    </div>
+  </div>
+
+  <div class="foot">
+    <div>GrocerTools — Case Study</div>
+    <div class="pn">4 of 4</div>
+  </div>
+</div>
+
+</body>
+</html>

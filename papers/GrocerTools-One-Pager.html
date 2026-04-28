@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>GrocerTools — One Pager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0e1016;
+    --paper: #faf7f1;
+    --paper-2: #4a4742;
+    --paper-3: #6f6c66;
+    --line: #d9d4c8;
+    --line-soft: #ece8de;
+    --accent-green: oklch(0.55 0.11 165);
+    --accent-amber: oklch(0.62 0.15 60);
+  }
+  @page { size: letter; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #ddd; }
+  body {
+    font-family: "Inter Tight", system-ui, sans-serif;
+    color: var(--ink);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .page {
+    width: 8.5in; min-height: 11in;
+    margin: 0 auto; padding: 0.6in 0.7in;
+    background: var(--paper);
+    page-break-after: always;
+    position: relative;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  .head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    border-bottom: 1px solid var(--ink);
+    padding-bottom: 14px;
+  }
+  .mark {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--ink);
+  }
+  .mark .dot {
+    display:inline-block; width:8px;height:8px;border-radius:50%;
+    background: var(--accent-green); margin-right:8px; vertical-align:middle;
+  }
+  .meta {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--paper-3); text-align: right;
+  }
+
+  h1 {
+    font-family: "Fraunces", serif; font-weight: 400;
+    font-size: 56px; line-height: 1.0; letter-spacing: -0.02em;
+    margin: 36px 0 6px;
+  }
+  h1 em { font-style: italic; color: var(--accent-green); }
+  .sub {
+    font-family: "Fraunces", serif; font-style: italic; font-weight: 300;
+    font-size: 22px; color: var(--paper-2); margin: 0 0 28px;
+  }
+
+  .lede {
+    font-size: 14px; line-height: 1.55; color: var(--paper-2);
+    max-width: 64ch; text-wrap: pretty;
+  }
+
+  h2 {
+    font-family: "Fraunces", serif; font-weight: 400;
+    font-size: 22px; letter-spacing: -0.01em;
+    margin: 28px 0 10px; color: var(--ink);
+  }
+  h2::before {
+    content: "";
+    display: inline-block; width: 22px; height: 1px;
+    background: var(--accent-green); vertical-align: middle;
+    margin-right: 12px; transform: translateY(-4px);
+  }
+
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 16px; }
+  .row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+
+  .stat {
+    border: 1px solid var(--line);
+    padding: 14px 16px;
+  }
+  .stat-v {
+    font-family: "Fraunces", serif; font-size: 26px; line-height: 1; letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .stat-k {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--paper-3); margin-top: 6px;
+  }
+
+  .tool {
+    border-top: 1px solid var(--line);
+    padding: 14px 0 10px;
+    display: grid; grid-template-columns: 160px 1fr 110px; gap: 18px;
+    align-items: baseline;
+  }
+  .tool:last-of-type { border-bottom: 1px solid var(--line); }
+  .tool-name {
+    font-family: "Fraunces", serif; font-size: 18px; letter-spacing: -0.01em;
+  }
+  .tool-desc { font-size: 13px; line-height: 1.5; color: var(--paper-2); }
+  .tool-impact {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--accent-green); text-align: right;
+  }
+
+  .why { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 28px; margin-top: 12px; }
+  .why p {
+    margin: 0; padding: 8px 0;
+    font-size: 13px; line-height: 1.5; color: var(--paper-2);
+    border-top: 1px solid var(--line-soft);
+  }
+  .why p strong { color: var(--ink); font-weight: 500; }
+
+  .cta {
+    margin-top: 32px;
+    border: 1px solid var(--ink);
+    padding: 22px 24px;
+    background: var(--ink);
+    color: var(--paper);
+    display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: center;
+  }
+  .cta-head {
+    font-family: "Fraunces", serif; font-size: 22px; letter-spacing: -0.01em;
+  }
+  .cta-head em { color: var(--accent-amber); font-style: italic; }
+  .cta-sub {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(250,247,241,0.65); margin-top: 4px;
+  }
+  .cta-url {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px; letter-spacing: 0.04em;
+    color: var(--accent-amber);
+  }
+
+  .foot {
+    position: absolute; bottom: 0.5in; left: 0.7in; right: 0.7in;
+    display: flex; justify-content: space-between;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--paper-3);
+    border-top: 1px solid var(--line); padding-top: 10px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="head">
+    <div class="mark"><span class="dot"></span>GrocerTools · 03 / Featured Work</div>
+    <div class="meta">One-Pager<br/>v1.0 · February 2026</div>
+  </div>
+
+  <h1>Simple tools for the <em>independent</em> grocer.</h1>
+  <p class="sub">Closing the technology gap for the stores that feed our communities.</p>
+
+  <p class="lede">
+    Independent grocery stores are stuck between expensive enterprise software and time-consuming
+    manual processes. Store managers spend hours each week creating sale signs in Publisher,
+    tracking expiration dates on clipboards, and losing money to waste they can't even measure.
+    GrocerTools is the bicycle, not the rocket ship — three focused tools that solve real
+    problems, no IT department required.
+  </p>
+
+  <div class="row-3">
+    <div class="stat">
+      <div class="stat-v">12,000 hrs</div>
+      <div class="stat-k">Annual labor lost to manual price tags</div>
+    </div>
+    <div class="stat">
+      <div class="stat-v">$100k+</div>
+      <div class="stat-k">Cost of enterprise shelf-label systems</div>
+    </div>
+    <div class="stat">
+      <div class="stat-v">$9.99/mo</div>
+      <div class="stat-k">GrocerTools — purpose-built, right-priced</div>
+    </div>
+  </div>
+
+  <h2>Three tools, one workflow</h2>
+
+  <div class="tool">
+    <div class="tool-name">Sale Card Generator</div>
+    <div class="tool-desc">Upload products, pick a template, print professional sale signs. Barcode scanner, Excel import, visual template builder.</div>
+    <div class="tool-impact">3–4 hrs → 30 min</div>
+  </div>
+  <div class="tool">
+    <div class="tool-name">Expiration Tracker</div>
+    <div class="tool-desc">Systematic date tracking with department-based alerts. Expiring items flow directly into markdown sale cards in one click.</div>
+    <div class="tool-impact">Reactive → Proactive</div>
+  </div>
+  <div class="tool">
+    <div class="tool-name">Waste Management</div>
+    <div class="tool-desc">Quick-entry waste logging with five categories. Patterns emerge: which vendors, which coolers, which days. Targeted action follows.</div>
+    <div class="tool-impact">Visibility → Recovery</div>
+  </div>
+
+  <h2>Why it works for small stores</h2>
+  <div class="why">
+    <p><strong>Built for small stores</strong> — Not a watered-down enterprise product.</p>
+    <p><strong>Works immediately</strong> — Value on day one, not after months of setup.</p>
+    <p><strong>No technical skills needed</strong> — If your staff can use a browser, they can use this.</p>
+    <p><strong>Mobile-ready</strong> — Tablets in-store, phones in the aisle.</p>
+    <p><strong>No POS integration</strong> — Works alongside whatever you have today.</p>
+    <p><strong>Your data is yours</strong> — Export anything, anytime, to Excel or CSV.</p>
+  </div>
+
+  <div class="cta">
+    <div>
+      <div class="cta-head">First 50 stores get <em>one full year free</em>.</div>
+      <div class="cta-sub">No credit card · No obligation · Your feedback shapes the product</div>
+    </div>
+    <div class="cta-url">→ grocertools.com</div>
+  </div>
+
+  <div class="foot">
+    <div>GrocerTools · One-Pager</div>
+    <div>Built for the stores that feed our communities</div>
+  </div>
+</div>
+</body>
+</html>

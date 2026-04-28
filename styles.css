@@ -1,0 +1,299 @@
+/* ============================================================
+   Craig Yappert — Personal Brand
+   Tokens
+   ============================================================ */
+:root {
+  /* Deep midnight base — warm undertone, not blue-cold */
+  --ink-0: #08090c;          /* near-black canvas */
+  --ink-1: #0e1016;          /* card */
+  --ink-2: #14171f;          /* raised */
+  --ink-3: #1c1f29;          /* border-strong */
+  --line:  #232733;          /* hairline border */
+  --line-soft: #1a1d27;
+
+  /* Cream / off-white for copy on dark */
+  --paper:   #f3efe6;        /* warm cream — primary fg on dark */
+  --paper-2: #d6d2c7;        /* muted */
+  --paper-3: #8e8b81;        /* tertiary, captions */
+  --paper-4: #5e5c55;        /* deep tertiary */
+
+  /* Accents — deep ink-blue + warm amber.
+     Same chroma family, rotated hue. */
+  --accent-blue:  oklch(0.52 0.13 252);   /* midnight blue */
+  --accent-blue-hi: oklch(0.66 0.14 252);
+  --accent-amber: oklch(0.74 0.15 60);    /* warm amber */
+  --accent-amber-hi: oklch(0.82 0.14 60);
+  --accent-green: oklch(0.62 0.11 165);   /* deep teal-green for success */
+  --accent-violet: oklch(0.55 0.13 295);  /* used sparingly */
+
+  /* Type */
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans:    "Inter Tight", "Inter", system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, monospace;
+
+  /* Rhythm */
+  --measure: 68ch;
+  --pad-page: clamp(20px, 4vw, 56px);
+  --maxw: 1280px;
+  --maxw-narrow: 920px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--ink-0);
+  color: var(--paper);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.55;
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+/* Subtle film grain — warms the dark canvas */
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(243,239,230,0.025) 0, transparent 50%),
+    radial-gradient(1px 1px at 70% 60%, rgba(243,239,230,0.02) 0, transparent 50%),
+    radial-gradient(1px 1px at 40% 80%, rgba(243,239,230,0.025) 0, transparent 50%);
+  z-index: 1;
+}
+
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+
+::selection { background: var(--accent-amber); color: var(--ink-0); }
+
+/* ============================================================
+   Layout helpers
+   ============================================================ */
+.cy-page {
+  position: relative;
+  z-index: 2;
+}
+.cy-container {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 var(--pad-page);
+}
+.cy-narrow {
+  max-width: var(--maxw-narrow);
+  margin: 0 auto;
+  padding: 0 var(--pad-page);
+}
+.cy-section {
+  padding: clamp(72px, 10vw, 140px) 0;
+  position: relative;
+}
+.cy-section + .cy-section {
+  border-top: 1px solid var(--line-soft);
+}
+
+/* Section eyebrow + title pattern */
+.cy-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent-amber);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.cy-eyebrow::before {
+  content: "";
+  width: 18px; height: 1px;
+  background: var(--accent-amber);
+}
+
+.cy-section-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(36px, 5.4vw, 64px);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  margin: 18px 0 0;
+  color: var(--paper);
+  text-wrap: balance;
+}
+.cy-section-title em {
+  font-style: italic;
+  color: var(--accent-amber);
+  font-feature-settings: "ss01";
+}
+
+.cy-section-lede {
+  margin-top: 22px;
+  max-width: 60ch;
+  color: var(--paper-2);
+  font-size: clamp(17px, 1.35vw, 19px);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+/* ============================================================
+   Top bar
+   ============================================================ */
+.cy-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 50;
+  padding: 18px var(--pad-page);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  backdrop-filter: blur(14px) saturate(140%);
+  background: color-mix(in oklab, var(--ink-0) 70%, transparent);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.3s ease, background 0.3s ease;
+}
+.cy-nav.is-scrolled {
+  border-bottom-color: var(--line-soft);
+}
+.cy-mark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+.cy-mark-glyph {
+  width: 28px; height: 28px;
+  border: 1px solid var(--paper);
+  display: grid; place-items: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0;
+  color: var(--paper);
+}
+.cy-nav-links {
+  display: flex;
+  gap: 26px;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+.cy-nav-links a {
+  text-decoration: none;
+  color: var(--paper-2);
+  transition: color 0.2s;
+}
+.cy-nav-links a:hover { color: var(--paper); }
+.cy-nav-cta {
+  padding: 9px 16px;
+  border: 1px solid var(--paper);
+  border-radius: 999px;
+  text-decoration: none;
+  color: var(--paper);
+  transition: background 0.2s, color 0.2s;
+}
+.cy-nav-cta:hover {
+  background: var(--accent-amber);
+  border-color: var(--accent-amber);
+  color: var(--ink-0);
+}
+@media (max-width: 760px) {
+  .cy-nav-links { display: none; }
+}
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.cy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 22px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform 0.15s, background 0.2s, color 0.2s, border 0.2s;
+}
+.cy-btn:hover { transform: translateY(-1px); }
+.cy-btn-primary {
+  background: var(--accent-amber);
+  color: var(--ink-0);
+  border-color: var(--accent-amber);
+}
+.cy-btn-primary:hover {
+  background: var(--accent-amber-hi);
+  border-color: var(--accent-amber-hi);
+}
+.cy-btn-ghost {
+  background: transparent;
+  color: var(--paper);
+  border-color: var(--ink-3);
+}
+.cy-btn-ghost:hover {
+  border-color: var(--paper);
+}
+.cy-btn-arrow {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  display: inline-block;
+  transition: transform 0.2s;
+}
+.cy-btn:hover .cy-btn-arrow { transform: translateX(3px); }
+
+/* ============================================================
+   Footer
+   ============================================================ */
+.cy-footer {
+  border-top: 1px solid var(--line-soft);
+  padding: 60px var(--pad-page) 40px;
+  color: var(--paper-3);
+  font-size: 14px;
+}
+.cy-footer-inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: center;
+}
+.cy-footer a {
+  color: var(--paper-2);
+  text-decoration: none;
+  margin-right: 22px;
+}
+.cy-footer a:hover { color: var(--paper); }
+
+/* ============================================================
+   Reveal-on-scroll
+   ============================================================ */
+.cy-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.cy-reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ============================================================
+   Utility
+   ============================================================ */
+.cy-mono { font-family: var(--font-mono); }
+.cy-rule {
+  height: 1px;
+  background: var(--line);
+  border: 0;
+  margin: 0;
+}

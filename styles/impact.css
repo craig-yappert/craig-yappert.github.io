@@ -1,0 +1,138 @@
+/* Impact map styles */
+.cy-impact {
+  background: linear-gradient(180deg, var(--ink-0) 0%, #0a0c11 100%);
+}
+
+.cy-impact-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 40px 0 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.cy-impact-legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--paper-3);
+}
+.cy-impact-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 4px;
+  margin-left: 8px;
+}
+.cy-impact-dot.s0 { background: var(--accent-blue); }
+.cy-impact-dot.s1 { background: var(--accent-amber); }
+.cy-impact-dot.s2 { background: var(--accent-green); }
+
+.cy-impact-filter {
+  display: flex; gap: 8px;
+}
+.cy-impact-pill {
+  border: 1px solid var(--ink-3);
+  background: transparent;
+  color: var(--paper-2);
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.cy-impact-pill:hover { border-color: var(--paper-2); color: var(--paper); }
+.cy-impact-pill.is-on {
+  background: var(--paper);
+  color: var(--ink-0);
+  border-color: var(--paper);
+}
+
+.cy-impact-canvas {
+  position: relative;
+  width: 100%;
+  margin-top: 8px;
+  background:
+    radial-gradient(ellipse at center, rgba(216,160,90,0.04) 0%, transparent 70%),
+    var(--ink-1);
+  border: 1px solid var(--line-soft);
+}
+.cy-impact-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.cy-impact-col {
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  fill: var(--paper);
+  font-weight: 350;
+}
+.cy-impact-col-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  fill: var(--accent-amber);
+}
+
+.cy-impact-circle {
+  transition: r 0.2s, fill 0.2s, stroke 0.2s;
+  stroke-width: 1.5;
+}
+.cy-impact-circle.layer-0 { fill: var(--ink-0); stroke: var(--accent-blue-hi); }
+.cy-impact-circle.layer-1 { fill: var(--ink-0); stroke: var(--accent-amber); }
+.cy-impact-circle.layer-2 { fill: var(--ink-0); stroke: var(--accent-green); }
+
+.cy-impact-node { cursor: pointer; transition: opacity 0.25s; }
+.cy-impact-node.is-dim { opacity: 0.18; }
+.cy-impact-node.is-mute { opacity: 0.08; }
+.cy-impact-node.is-hover .cy-impact-circle { fill: var(--accent-amber); stroke: var(--accent-amber); }
+.cy-impact-node.is-hover { opacity: 1 !important; }
+
+.cy-impact-label {
+  font-family: var(--font-sans);
+  pointer-events: none;
+  line-height: 1.2;
+}
+.cy-impact-label.l0 { text-align: right; }
+.cy-impact-label.l1 { text-align: center; }
+.cy-impact-label.l2 { text-align: left; }
+.cy-impact-label-main {
+  font-size: 13px;
+  color: var(--paper);
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+.cy-impact-label-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--paper-3);
+  margin-top: 3px;
+}
+
+.cy-impact-node.is-hover .cy-impact-label-main { color: var(--accent-amber); }
+
+.cy-impact-footnote {
+  margin-top: 20px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--paper-3);
+}
+
+@media (max-width: 760px) {
+  .cy-impact-canvas { display: none; }
+  .cy-impact-mobile { display: block; }
+}

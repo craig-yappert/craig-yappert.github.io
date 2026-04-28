@@ -1,0 +1,55 @@
+/* Metrics styles */
+.cy-metric-grid {
+  margin-top: 56px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line-soft);
+  border: 1px solid var(--line-soft);
+}
+@media (max-width: 880px) { .cy-metric-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 540px) { .cy-metric-grid { grid-template-columns: 1fr; } }
+
+.cy-metric {
+  background: var(--ink-0);
+  padding: 36px 28px 32px;
+  position: relative;
+  transition: background 0.3s;
+}
+.cy-metric:hover { background: var(--ink-1); }
+.cy-metric::before {
+  content: "0" counter(idx, decimal);
+  position: absolute;
+  top: 18px; right: 22px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--paper-4);
+  letter-spacing: 0.1em;
+}
+.cy-metric-grid { counter-reset: idx; }
+.cy-metric { counter-increment: idx; }
+
+.cy-metric-num {
+  font-family: var(--font-display);
+  font-weight: 350;
+  font-size: clamp(44px, 5.5vw, 72px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--accent-amber);
+}
+.cy-metric-label {
+  margin-top: 16px;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--paper);
+  text-wrap: pretty;
+  max-width: 32ch;
+}
+.cy-metric-context {
+  margin-top: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--paper-3);
+}

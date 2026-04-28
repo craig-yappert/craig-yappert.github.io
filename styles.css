@@ -202,8 +202,87 @@ button { font: inherit; color: inherit; }
   border-color: var(--accent-amber);
   color: var(--ink-0);
 }
+.cy-nav-burger {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--ink-3);
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  border-radius: 6px;
+}
+.cy-nav-burger span {
+  display: block;
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  height: 1.5px;
+  background: var(--paper);
+  transition: transform 0.25s ease, opacity 0.2s ease, top 0.25s ease;
+}
+.cy-nav-burger span:nth-child(1) { top: 13px; }
+.cy-nav-burger span:nth-child(2) { top: 19px; }
+.cy-nav-burger span:nth-child(3) { top: 25px; }
+.cy-nav-burger.is-open span:nth-child(1) { top: 19px; transform: rotate(45deg); }
+.cy-nav-burger.is-open span:nth-child(2) { opacity: 0; }
+.cy-nav-burger.is-open span:nth-child(3) { top: 19px; transform: rotate(-45deg); }
+
+.cy-nav-sheet {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 10, 14, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 90;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  display: none;
+}
+.cy-nav-sheet.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.cy-nav-sheet-inner {
+  position: absolute;
+  top: 72px;
+  left: 16px;
+  right: 16px;
+  background: var(--ink-1);
+  border: 1px solid var(--line);
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transform: translateY(-8px);
+  transition: transform 0.3s ease;
+}
+.cy-nav-sheet.is-open .cy-nav-sheet-inner {
+  transform: translateY(0);
+}
+.cy-nav-sheet-inner a {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--paper);
+  text-decoration: none;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line-soft);
+  letter-spacing: -0.01em;
+}
+.cy-nav-sheet-inner a:last-child { border-bottom: 0; }
+.cy-nav-sheet-cta {
+  margin-top: 12px;
+  color: var(--accent-amber) !important;
+  font-style: italic;
+}
+
 @media (max-width: 760px) {
   .cy-nav-links { display: none; }
+  .cy-nav-cta { display: none; }
+  .cy-nav-burger { display: block; }
+  .cy-nav-sheet { display: block; }
 }
 
 /* ============================================================

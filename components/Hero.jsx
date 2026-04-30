@@ -20,8 +20,7 @@ const Hero = () => {
           </div>
           <h1 className="cy-hero-title">
             I build <em>solutions</em><br />
-            that touch <em>people’s</em><br />
-            actual lives.
+            that drive meaningful <em>change</em>.
           </h1>
           <p className="cy-hero-lede">
             Three decades of enterprise leadership — Oracle, MidPen Housing, now Zeeba — turning strategy into shipped systems.

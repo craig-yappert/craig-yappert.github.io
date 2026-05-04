@@ -178,9 +178,6 @@
   cursor: pointer;
   transition: opacity 0.2s, border-color 0.2s;
 }
-.cy-impact-mob-item.is-dim {
-  opacity: 0.18;
-}
 .cy-impact-mob-item.is-selected {
   border-color: var(--accent-amber);
 }

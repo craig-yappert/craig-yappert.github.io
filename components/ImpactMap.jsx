@@ -104,6 +104,23 @@ const ImpactMap = () => {
     );
   };
 
+  // For mobile: collect all nodes reachable from startId in both directions (2 hops),
+  // so tapping Strategy reveals its Systems and those Systems' Outcomes.
+  const getMobileConnected = (startId) => {
+    const connected = new Set([startId]);
+    IMPACT_LINKS.forEach(([a, b]) => {
+      if (a === startId) connected.add(b);
+      if (b === startId) connected.add(a);
+    });
+    [...connected].forEach(id => {
+      IMPACT_LINKS.forEach(([a, b]) => {
+        if (a === id) connected.add(b);
+        if (b === id) connected.add(a);
+      });
+    });
+    return connected;
+  };
+
   const isActiveLink = ([a,b]) => {
     if (!hovered) return true;
     return a === hovered || b === hovered;
@@ -223,13 +240,13 @@ const ImpactMap = () => {
                 <span className="cy-impact-mob-title">{col.title}</span>
               </div>
               <ul className="cy-impact-mob-list">
-                {IMPACT_NODES.filter(n => n.layer === col.layer && matchesFilter(n)).map(n => (
+                {IMPACT_NODES.filter(n =>
+                  n.layer === col.layer &&
+                  matchesFilter(n) &&
+                  (!hovered || getMobileConnected(hovered).has(n.id))
+                ).map(n => (
                   <li key={n.id}
-                      className={[
-                        "cy-impact-mob-item",
-                        hovered === n.id ? "is-selected" : "",
-                        hovered && !isActiveNode(n.id) ? "is-dim" : "",
-                      ].filter(Boolean).join(" ")}
+                      className={"cy-impact-mob-item" + (hovered === n.id ? " is-selected" : "")}
                       onClick={() => setHovered(hovered === n.id ? null : n.id)}>
                     <span className={"cy-impact-dot " + col.dot} />
                     <div>

@@ -220,7 +220,7 @@ const ImpactMap = () => {
                 <span className="cy-impact-mob-title">{col.title}</span>
               </div>
               <ul className="cy-impact-mob-list">
-                {IMPACT_NODES.filter(n => n.layer === col.layer).map(n => (
+                {IMPACT_NODES.filter(n => n.layer === col.layer && matchesFilter(n)).map(n => (
                   <li key={n.id} className="cy-impact-mob-item">
                     <span className={"cy-impact-dot " + col.dot} />
                     <div>

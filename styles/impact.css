@@ -221,4 +221,5 @@
 @media (max-width: 760px) {
   .cy-impact-canvas { display: none; }
   .cy-impact-mobile { display: block; }
+  .cy-impact-footnote { display: none; }
 }

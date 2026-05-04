@@ -209,6 +209,9 @@ const ImpactMap = () => {
 
         {/* Mobile fallback — vertical flow */}
         <div className="cy-impact-mobile">
+          {hovered && (
+            <div className="cy-impact-mob-hint">Tap again to clear · showing connections</div>
+          )}
           {[
             { num: "01", title: "Strategy",  layer: 0, dot: "s0" },
             { num: "02", title: "Systems",   layer: 1, dot: "s1" },
@@ -221,7 +224,13 @@ const ImpactMap = () => {
               </div>
               <ul className="cy-impact-mob-list">
                 {IMPACT_NODES.filter(n => n.layer === col.layer && matchesFilter(n)).map(n => (
-                  <li key={n.id} className="cy-impact-mob-item">
+                  <li key={n.id}
+                      className={[
+                        "cy-impact-mob-item",
+                        hovered === n.id ? "is-selected" : "",
+                        hovered && !isActiveNode(n.id) ? "is-dim" : "",
+                      ].filter(Boolean).join(" ")}
+                      onClick={() => setHovered(hovered === n.id ? null : n.id)}>
                     <span className={"cy-impact-dot " + col.dot} />
                     <div>
                       <div className="cy-impact-mob-label">{n.label}</div>

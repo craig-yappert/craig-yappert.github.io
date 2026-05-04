@@ -175,6 +175,26 @@
   padding: 12px 14px;
   background: var(--ink-1);
   border: 1px solid var(--line-soft);
+  cursor: pointer;
+  transition: opacity 0.2s, border-color 0.2s;
+}
+.cy-impact-mob-item.is-dim {
+  opacity: 0.18;
+}
+.cy-impact-mob-item.is-selected {
+  border-color: var(--accent-amber);
+}
+.cy-impact-mob-item.is-selected .cy-impact-mob-label {
+  color: var(--accent-amber);
+}
+.cy-impact-mob-hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-amber);
+  text-align: center;
+  margin-bottom: 16px;
 }
 .cy-impact-mob-item .cy-impact-dot {
   margin-top: 7px;

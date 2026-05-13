@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>People Directory</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+
+  <!-- React 18 -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Babel standalone (JSX transpilation in-browser) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- D3 v7 (org chart only) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { height: 100%; }
+    body { overflow: hidden; }
+    .leaflet-container { font-family: inherit; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo, useEffect, useRef, createContext, useContext } = React;
+
+    /* ─── Context ────────────────────────────────────────────────── */
+    const EmployeesCtx = createContext({ employees: [], employeeMap: {}, cityCoords: {} });
+
+    /* ─── Theme ──────────────────────────────────────────────────── */
+    const THEMES = {
+      dark: {
+        bg: "#0f172a", bgAlt: "#0a1628", surface: "#1e293b", surfaceHover: "#243447",
+        border: "#334155", text1: "#f1f5f9", text2: "#94a3b8", text3: "#64748b", text4: "#475569",
+        accent: "#f59e0b", accentBg: "#f59e0b18", accentBorder: "#f59e0b44",
+        active: "#10b981", activeBg: "#d1fae5", activeText: "#065f46",
+        inactiveBg: "#f3f4f6", inactiveText: "#6b7280", inactiveDot: "#9ca3af",
+        inputBg: "#1e293b", inputBorder: "#334155",
+        mapPin: "#f59e0b", mapPinText: "#0f172a",
+        selectedRow: "#1e3a5f",
+        mapTile: "dark",
+      },
+      light: {
+        bg: "#f8fafc", bgAlt: "#f1f5f9", surface: "#ffffff", surfaceHover: "#f8fafc",
+        border: "#e2e8f0", text1: "#0f172a", text2: "#475569", text3: "#94a3b8", text4: "#cbd5e1",
+        accent: "#d97706", accentBg: "#fef3c718", accentBorder: "#d9770644",
+        active: "#059669", activeBg: "#d1fae5", activeText: "#065f46",
+        inactiveBg: "#f3f4f6", inactiveText: "#6b7280", inactiveDot: "#9ca3af",
+        inputBg: "#ffffff", inputBorder: "#cbd5e1",
+        mapPin: "#d97706", mapPinText: "#ffffff",
+        selectedRow: "#fef3c7",
+        mapTile: "light",
+      },
+    };
+
+    /* ─── Constants ──────────────────────────────────────────────── */
+    const DEPT_COLORS = {
+      Engineering: "#3b82f6", Product: "#8b5cf6", Design: "#ec4899",
+      People: "#10b981", Finance: "#f59e0b", Sales: "#f97316",
+      Marketing: "#06b6d4", Analytics: "#6366f1",
+    };
+    const DEFAULTS     = { search: "", status: "active", dept: "all", country: "all", style: "all", sortKey: "name", sortDir: "asc" };
+    const DEFAULT_COLS = new Set(["name","status","title","department","country","city","workStyle"]);
+    const COLUMNS = [
+      { key: "name",       label: "Name",       always: true  },
+      { key: "status",     label: "Status",     always: true  },
+      { key: "title",      label: "Title",      always: false },
+      { key: "department", label: "Department", always: false },
+      { key: "email",      label: "Email",      always: false },
+      { key: "manager",    label: "Manager",    always: false },
+      { key: "country",    label: "Country",    always: false },
+      { key: "city",       label: "City",       always: false },
+      { key: "workStyle",  label: "Work Style", always: false },
+    ];
+    const TABS = [
+      { key: "list", label: "List" },
+      { key: "map",  label: "Map"  },
+      { key: "org",  label: "Org"  },
+    ];
+
+    /* ─── Helpers ────────────────────────────────────────────────── */
+    const getAssigned = emp => emp.locations.find(l => l.type === "assigned") || {};
+    const getManager  = (emp, employeeMap) => { const m = employeeMap[emp.managerId]; return m ? `${m.firstName} ${m.lastName}` : null; };
+    const initials    = emp => `${emp.firstName[0]}${emp.lastName[0]}`;
+    const setsEqual   = (a, b) => a.size === b.size && [...a].every(v => b.has(v));
+    const truncate    = (s, n) => s && s.length > n ? s.slice(0, n-1) + "…" : (s || "");
+
+    /* ─── Badges ─────────────────────────────────────────────────── */
+    const StatusBadge = ({ status, t }) => (
+      <span style={{
+        display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 10px",
+        borderRadius: 99, fontSize: 11, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase",
+        background: status === "active" ? t.activeBg : t.inactiveBg,
+        color: status === "active" ? t.activeText : t.inactiveText,
+      }}>
+        <span style={{ width: 6, height: 6, borderRadius: "50%", background: status === "active" ? t.active : t.inactiveDot }} />
+        {status}
+      </span>
+    );
+
+    const WorkStyleBadge = ({ ws }) => (
+      <span style={{
+        display: "inline-block", padding: "2px 10px", borderRadius: 4, fontSize: 11,
+        fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase",
+        background: ws === "office" ? "#eff6ff" : "#faf5ff",
+        color: ws === "office" ? "#1d4ed8" : "#7c3aed",
+        border: `1px solid ${ws === "office" ? "#bfdbfe" : "#ddd6fe"}`,
+      }}>
+        {ws === "office" ? "Office" : "Remote"}
+      </span>
+    );
+
+    /* ─── Detail Drawer ──────────────────────────────────────────── */
+    function Section({ label, children, t }) {
+      return (
+        <div style={{ marginBottom: 22 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: t.text3, marginBottom: 10 }}>{label}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{children}</div>
+        </div>
+      );
+    }
+
+    function Field({ label, value, t }) {
+      return (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+          <span style={{ fontSize: 12, color: t.text3, flexShrink: 0, paddingTop: 1 }}>{label}</span>
+          <span style={{ fontSize: 13, color: t.text2, textAlign: "right" }}>{value}</span>
+        </div>
+      );
+    }
+
+    function DetailDrawer({ emp, onClose, t }) {
+      const { employees, employeeMap } = useContext(EmployeesCtx);
+      if (!emp) return null;
+      const loc       = getAssigned(emp);
+      const manager   = getManager(emp, employeeMap);
+      const deptColor = DEPT_COLORS[emp.department] || "#64748b";
+      const reports   = employees.filter(e => e.managerId === emp.id);
+      return (
+        <>
+          <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 200 }} />
+          <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: 340, background: t.bg, borderLeft: `1px solid ${t.border}`, zIndex: 201, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+            <div style={{ height: 4, background: deptColor, flexShrink: 0 }} />
+            <div style={{ padding: "24px 24px 20px", borderBottom: `1px solid ${t.border}` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div style={{ width: 52, height: 52, borderRadius: 12, background: deptColor + "22", border: `2px solid ${deptColor}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: deptColor }}>
+                  {initials(emp)}
+                </div>
+                <button onClick={onClose} style={{ background: "none", border: "none", color: t.text3, fontSize: 20, cursor: "pointer", padding: 4, lineHeight: 1 }}>✕</button>
+              </div>
+              <div style={{ marginTop: 14 }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: t.text1, letterSpacing: "-0.02em" }}>{emp.firstName} {emp.lastName}</div>
+                <div style={{ fontSize: 13, color: t.text2, marginTop: 3 }}>{emp.title}</div>
+                <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
+                  <StatusBadge status={emp.status} t={t} />
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: deptColor + "22", color: deptColor }}>{emp.department}</span>
+                </div>
+              </div>
+            </div>
+            <div style={{ padding: "20px 24px", flex: 1 }}>
+              <Section label="Contact" t={t}>
+                <Field t={t} label="Email" value={<span style={{ fontFamily: "'DM Mono',monospace", fontSize: 12 }}>{emp.email}</span>} />
+                <Field t={t} label="ID"    value={<span style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: t.text3 }}>{emp.id}</span>} />
+              </Section>
+              <Section label="Assigned Location" t={t}>
+                <Field t={t} label="City"       value={loc.city || "—"} />
+                <Field t={t} label="Country"    value={loc.country || "—"} />
+                <Field t={t} label="Work Style" value={loc.workStyle ? <WorkStyleBadge ws={loc.workStyle} /> : "—"} />
+              </Section>
+              <Section label="Reporting" t={t}>
+                <Field t={t} label="Manager" value={manager || <span style={{ color: t.text3 }}>No manager</span>} />
+                {reports.length > 0 && (
+                  <Field t={t} label="Direct Reports" value={
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 2 }}>
+                      {reports.map(r => (
+                        <span key={r.id} style={{ fontSize: 13, color: t.text2 }}>
+                          {r.firstName} {r.lastName}<span style={{ color: t.text3, fontSize: 11 }}> · {r.title}</span>
+                        </span>
+                      ))}
+                    </div>
+                  } />
+                )}
+              </Section>
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    /* ─── Map View (Leaflet) ─────────────────────────────────────── */
+    function MapView({ onSelectEmployee, t }) {
+      const { employees, cityCoords } = useContext(EmployeesCtx);
+      const containerRef   = useRef(null);
+      const mapRef         = useRef(null);
+      const tileRef        = useRef(null);
+      const markersRef     = useRef(null);
+      const [filterStatus, setFilterStatus] = useState("active");
+      const [popup, setPopup] = useState(null);
+      const onSelectRef = useRef(onSelectEmployee);
+      useEffect(() => { onSelectRef.current = onSelectEmployee; }, [onSelectEmployee]);
+
+      // Init map once on mount
+      useEffect(() => {
+        if (!containerRef.current || mapRef.current) return;
+        const map = L.map(containerRef.current, {
+          center: [20, 0],
+          zoom: 2,
+          minZoom: 1,
+          maxZoom: 10,
+          zoomControl: true,
+          attributionControl: true,
+        });
+        mapRef.current = map;
+        markersRef.current = L.layerGroup().addTo(map);
+        map.on("click", () => setPopup(null));
+        return () => {
+          map.remove();
+          mapRef.current = null;
+          markersRef.current = null;
+        };
+      }, []);
+
+      // Swap tile layer when theme changes
+      useEffect(() => {
+        const map = mapRef.current;
+        if (!map) return;
+        if (tileRef.current) map.removeLayer(tileRef.current);
+        const url = t.mapTile === "dark"
+          ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+        tileRef.current = L.tileLayer(url, {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: "abcd",
+          maxZoom: 20,
+        }).addTo(map);
+      }, [t]);
+
+      // Rebuild markers when filter, theme, or data changes
+      useEffect(() => {
+        const map   = mapRef.current;
+        const group = markersRef.current;
+        if (!map || !group || !employees.length) return;
+        group.clearLayers();
+        setPopup(null);
+
+        const shown = employees.filter(e => filterStatus === "all" || e.status === filterStatus);
+        const byCity = {};
+        shown.forEach(e => {
+          const loc = getAssigned(e);
+          if (!loc.city || !cityCoords[loc.city]) return;
+          if (!byCity[loc.city]) byCity[loc.city] = { city: loc.city, country: loc.country, employees: [] };
+          byCity[loc.city].employees.push(e);
+        });
+
+        Object.values(byCity).forEach(({ city, country, employees: emps }) => {
+          const [lng, lat] = cityCoords[city];
+          const count = emps.length;
+          const size  = count > 1 ? 26 : 16;
+          const icon  = L.divIcon({
+            className: "",
+            html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${t.mapPin};border:2px solid rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:${t.mapPinText};font-family:'DM Sans',sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.3);cursor:pointer;">${count > 1 ? count : ""}</div>`,
+            iconSize:   [size, size],
+            iconAnchor: [size / 2, size / 2],
+          });
+          const marker = L.marker([lat, lng], { icon });
+          marker.on("click", ev => {
+            L.DomEvent.stopPropagation(ev);
+            const pt = ev.containerPoint;
+            setPopup({ x: pt.x, y: pt.y, city, country, employees: emps });
+          });
+          group.addLayer(marker);
+        });
+      }, [filterStatus, t, employees, cityCoords]);
+
+      return (
+        <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+          {/* Toolbar */}
+          <div style={{ padding: "12px 28px", borderBottom: `1px solid ${t.border}`, display: "flex", gap: 10, alignItems: "center", flexShrink: 0, background: t.bg }}>
+            <span style={{ fontSize: 12, color: t.text3 }}>Show</span>
+            {["active","all","inactive"].map(s => (
+              <button key={s} onClick={() => setFilterStatus(s)} style={{
+                padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+                fontFamily: "inherit", cursor: "pointer",
+                border: filterStatus===s ? `1px solid ${t.accentBorder}` : `1px solid ${t.border}`,
+                background: filterStatus===s ? t.accentBg : "transparent",
+                color: filterStatus===s ? t.accent : t.text3,
+              }}>{s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}</button>
+            ))}
+          </div>
+
+          {/* Map + React popup overlay */}
+          <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+            <div ref={containerRef} style={{ width: "100%", height: "100%", minHeight: 480 }} />
+
+            {popup && (
+              <div style={{
+                position: "absolute",
+                left: Math.min(popup.x + 16, (containerRef.current?.clientWidth || 960) - 240),
+                top:  Math.max(popup.y - 20, 8),
+                width: 220, background: t.surface, border: `1px solid ${t.border}`,
+                borderRadius: 10, padding: "12px 14px", zIndex: 1000,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+              }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: t.text1, marginBottom: 2 }}>{popup.city}</div>
+                <div style={{ fontSize: 11, color: t.text3, marginBottom: 10 }}>
+                  {popup.country} · {popup.employees.length} employee{popup.employees.length !== 1 ? "s" : ""}
+                </div>
+                {popup.employees.map(e => (
+                  <div key={e.id}
+                    onClick={() => { onSelectRef.current(e); setPopup(null); }}
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderTop: `1px solid ${t.border}`, cursor: "pointer" }}
+                    onMouseEnter={ev => ev.currentTarget.style.background = t.bgAlt}
+                    onMouseLeave={ev => ev.currentTarget.style.background = ""}
+                  >
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, background: e.status === "active" ? t.active : t.inactiveDot }} />
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: t.text1 }}>{e.firstName} {e.lastName}</div>
+                      <div style={{ fontSize: 11, color: t.text3 }}>{e.title}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    /* ─── Org Chart View ─────────────────────────────────────────── */
+    function OrgView({ onSelectEmployee, t }) {
+      const { employees } = useContext(EmployeesCtx);
+      const containerRef  = useRef(null);
+      const onSelectRef   = useRef(onSelectEmployee);
+      useEffect(() => { onSelectRef.current = onSelectEmployee; }, [onSelectEmployee]);
+
+      useEffect(() => {
+        const el = containerRef.current;
+        if (!el || !employees.length) return;
+
+        const W = el.clientWidth || 960;
+        const H = el.clientHeight || 560;
+        const NW = 200, NH = 72, HG = 24, VG = 56;
+
+        const nodeMap = {};
+        employees.forEach(e => { nodeMap[e.id] = { ...e, children: [] }; });
+        const roots = [];
+        employees.forEach(e => {
+          if (e.managerId && nodeMap[e.managerId]) nodeMap[e.managerId].children.push(nodeMap[e.id]);
+          else if (!e.managerId) roots.push(nodeMap[e.id]);
+        });
+
+        const virtualRoot = { id: "__root__", firstName: "", lastName: "", title: "", department: "", status: "active", children: roots };
+        const root = d3.hierarchy(virtualRoot);
+
+        root.descendants().forEach(d => {
+          if (d.depth > 1 && d.children) { d._children = d.children; d.children = null; }
+        });
+
+        const treeLayout = d3.tree().nodeSize([NW + HG, NH + VG]);
+
+        const svg = d3.select(el).append("svg")
+          .attr("width", "100%").attr("height", "100%")
+          .style("cursor", "grab").style("background", t.bg);
+
+        const g = svg.append("g");
+
+        const zoom = d3.zoom().scaleExtent([0.1, 2])
+          .on("zoom", e => { g.attr("transform", e.transform); svg.style("cursor", "grabbing"); })
+          .on("end",  () => svg.style("cursor", "grab"));
+        svg.call(zoom).on("dblclick.zoom", null);
+
+        const linkGen = d3.linkVertical().x(d => d.x).y(d => d.y + NH / 2);
+
+        function update(sourceNode) {
+          treeLayout(root);
+          const nodes = root.descendants().filter(d => d.data.id !== "__root__");
+          const links = root.links().filter(l => l.source.data.id !== "__root__");
+          const DUR = 260;
+
+          const linkSel = g.selectAll(".org-link").data(links, d => d.target.data.id);
+          linkSel.enter().append("path").attr("class", "org-link")
+            .attr("fill", "none").attr("stroke", t.border).attr("stroke-width", 1.5)
+            .attr("d", () => { const o = { x: sourceNode._x0??sourceNode.x, y: sourceNode._y0??sourceNode.y }; return linkGen({source:o,target:o}); })
+            .merge(linkSel).transition().duration(DUR).attr("d", linkGen);
+          linkSel.exit().transition().duration(DUR)
+            .attr("d", () => { const o={x:sourceNode.x,y:sourceNode.y}; return linkGen({source:o,target:o}); })
+            .remove();
+
+          const nodeSel = g.selectAll(".org-node").data(nodes, d => d.data.id);
+
+          const nodeEnter = nodeSel.enter().append("g").attr("class", "org-node")
+            .attr("transform", () => `translate(${sourceNode._x0??sourceNode.x},${sourceNode._y0??sourceNode.y})`)
+            .style("opacity", 0);
+
+          nodeEnter.append("rect")
+            .attr("x", -NW/2).attr("y", 0).attr("width", NW).attr("height", NH).attr("rx", 8)
+            .attr("fill", t.surface).attr("stroke", t.border).attr("stroke-width", 1)
+            .style("filter", "drop-shadow(0 2px 6px rgba(0,0,0,0.12))");
+
+          nodeEnter.append("rect")
+            .attr("x", -NW/2).attr("y", 0).attr("width", NW).attr("height", 4).attr("rx", 8)
+            .attr("fill", d => DEPT_COLORS[d.data.department] || t.text3);
+
+          nodeEnter.append("rect")
+            .attr("x", -NW/2).attr("y", 2).attr("width", NW).attr("height", 2)
+            .attr("fill", d => DEPT_COLORS[d.data.department] || t.text3);
+
+          nodeEnter.append("circle")
+            .attr("cx", -NW/2+28).attr("cy", NH/2+2).attr("r", 19)
+            .attr("fill", d => (DEPT_COLORS[d.data.department]||"#64748b")+"28")
+            .attr("stroke", d => DEPT_COLORS[d.data.department]||"#64748b").attr("stroke-width", 1.5);
+
+          nodeEnter.append("text")
+            .attr("x", -NW/2+28).attr("y", NH/2+6)
+            .attr("text-anchor", "middle")
+            .attr("fill", d => DEPT_COLORS[d.data.department]||t.text2)
+            .attr("font-size", 11).attr("font-weight", 700).attr("font-family", "DM Sans, sans-serif")
+            .text(d => initials(d.data));
+
+          nodeEnter.filter(d => d.data.status==="inactive").append("circle")
+            .attr("cx", -NW/2+40).attr("cy", NH/2-10).attr("r", 4).attr("fill", t.inactiveDot);
+
+          nodeEnter.append("text")
+            .attr("x", -NW/2+54).attr("y", NH/2-5)
+            .attr("fill", d => d.data.status==="inactive" ? t.text3 : t.text1)
+            .attr("font-size", 12).attr("font-weight", 600).attr("font-family", "DM Sans, sans-serif")
+            .text(d => truncate(`${d.data.firstName} ${d.data.lastName}`, 22));
+
+          nodeEnter.append("text")
+            .attr("x", -NW/2+54).attr("y", NH/2+13)
+            .attr("fill", t.text3).attr("font-size", 10).attr("font-family", "DM Sans, sans-serif")
+            .text(d => truncate(d.data.title, 26));
+
+          nodeEnter.append("rect")
+            .attr("x", -NW/2).attr("y", 0).attr("width", NW).attr("height", NH).attr("rx", 8)
+            .attr("fill", "transparent").style("cursor", "pointer")
+            .on("mouseover", function() { d3.select(this.parentNode).select("rect").attr("stroke", t.text3); })
+            .on("mouseout",  function() { d3.select(this.parentNode).select("rect").attr("stroke", t.border); })
+            .on("click", (event, d) => {
+              event.stopPropagation();
+              const emp = employees.find(e => e.id === d.data.id);
+              if (emp) onSelectRef.current(emp);
+            });
+
+          const toggleG = nodeEnter.append("g").attr("class", "toggle-btn")
+            .attr("transform", `translate(0,${NH})`).style("cursor", "pointer")
+            .on("click", (event, d) => {
+              event.stopPropagation();
+              if (d.children) { d._children = d.children; d.children = null; }
+              else if (d._children) { d.children = d._children; d._children = null; }
+              d._x0 = d.x; d._y0 = d.y; update(d);
+            });
+
+          toggleG.append("circle").attr("r", 10)
+            .attr("fill", t.bg).attr("stroke", t.border).attr("stroke-width", 1.5);
+          toggleG.append("text").attr("class", "toggle-label")
+            .attr("text-anchor", "middle").attr("dy", "0.35em")
+            .attr("fill", t.text2).attr("font-size", 14).attr("font-family", "DM Sans, sans-serif").attr("font-weight", 700);
+
+          const nodeAll = nodeEnter.merge(nodeSel);
+          nodeAll.transition().duration(DUR)
+            .attr("transform", d => `translate(${d.x},${d.y})`).style("opacity", 1);
+
+          nodeAll.select(".toggle-btn").style("display", d => (d.children||d._children) ? "block" : "none");
+          nodeAll.select(".toggle-label").text(d => d.children ? "−" : d._children ? "+" : "");
+
+          nodeSel.exit().transition().duration(DUR)
+            .attr("transform", `translate(${sourceNode.x},${sourceNode.y})`).style("opacity", 0).remove();
+
+          root.descendants().forEach(d => { d._x0 = d.x; d._y0 = d.y; });
+        }
+
+        root._x0 = 0; root._y0 = 0;
+        update(root);
+
+        setTimeout(() => {
+          const bbox = g.node().getBBox();
+          if (!bbox.width) return;
+          const scale = Math.min(0.9, Math.min(W / (bbox.width + 80), H / (bbox.height + 80)));
+          const tx = W / 2 - scale * (bbox.x + bbox.width / 2);
+          const ty = 48 - scale * bbox.y;
+          svg.call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+        }, 60);
+
+        return () => d3.select(el).selectAll("*").remove();
+      }, [t, employees]);
+
+      return (
+        <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+          <div style={{ padding: "12px 28px", borderBottom: `1px solid ${t.border}`, display: "flex", gap: 16, alignItems: "center", flexShrink: 0, background: t.bg }}>
+            <span style={{ fontSize: 12, color: t.text3 }}>
+              Click ＋/－ to expand or collapse · Click a card to open the employee record · Scroll to zoom · Drag to pan
+            </span>
+          </div>
+          <div ref={containerRef} style={{ flex: 1, minHeight: 500, overflow: "hidden" }} />
+        </div>
+      );
+    }
+
+    /* ─── Main ───────────────────────────────────────────────────── */
+    function EmployeeDirectory() {
+      const [isDark,    setIsDark]    = useState(true);
+      const [employees, setEmployees] = useState([]);
+      const [loading,   setLoading]   = useState(true);
+      const [fetchErr,  setFetchErr]  = useState(false);
+      const [cityCoords, setCityCoords] = useState({});
+      const [tab,       setTab]       = useState("list");
+      const [search,    setSearch]    = useState(DEFAULTS.search);
+      const [status,    setStatus]    = useState(DEFAULTS.status);
+      const [dept,      setDept]      = useState(DEFAULTS.dept);
+      const [country,   setCountry]   = useState(DEFAULTS.country);
+      const [style,     setStyle]     = useState(DEFAULTS.style);
+      const [sortKey,   setSortKey]   = useState(DEFAULTS.sortKey);
+      const [sortDir,   setSortDir]   = useState(DEFAULTS.sortDir);
+      const [cols,      setCols]      = useState(DEFAULT_COLS);
+      const [colOpen,   setColOpen]   = useState(false);
+      const [selected,  setSelected]  = useState(null);
+
+      const t = THEMES[isDark ? "dark" : "light"];
+
+      useEffect(() => {
+        fetch("./employees.json")
+          .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+          .then(data => {
+            setEmployees(data.employees);
+            setCityCoords(data.cityCoords);
+            setLoading(false);
+          })
+          .catch(() => { setFetchErr(true); setLoading(false); });
+      }, []);
+
+      const employeeMap = useMemo(() => Object.fromEntries(employees.map(e => [e.id, e])), [employees]);
+      const DEPARTMENTS = useMemo(() => [...new Set(employees.map(e => e.department))].sort(), [employees]);
+      const COUNTRIES   = useMemo(() => [...new Set(employees.flatMap(e => e.locations.map(l => l.country)))].sort(), [employees]);
+
+      const isDefault = (
+        search===DEFAULTS.search && status===DEFAULTS.status && dept===DEFAULTS.dept &&
+        country===DEFAULTS.country && style===DEFAULTS.style && sortKey===DEFAULTS.sortKey &&
+        sortDir===DEFAULTS.sortDir && setsEqual(cols, DEFAULT_COLS)
+      );
+
+      const resetAll = () => {
+        setSearch(DEFAULTS.search); setStatus(DEFAULTS.status); setDept(DEFAULTS.dept);
+        setCountry(DEFAULTS.country); setStyle(DEFAULTS.style); setSortKey(DEFAULTS.sortKey);
+        setSortDir(DEFAULTS.sortDir); setCols(new Set(DEFAULT_COLS));
+      };
+
+      const toggleCol  = key => setCols(prev => { const n=new Set(prev); n.has(key)?n.delete(key):n.add(key); return n; });
+      const handleSort = key => { if (sortKey===key) setSortDir(d=>d==="asc"?"desc":"asc"); else { setSortKey(key); setSortDir("asc"); } };
+
+      const filtered = useMemo(() => {
+        const q = search.toLowerCase();
+        return employees.filter(e => {
+          const loc  = getAssigned(e);
+          const name = `${e.firstName} ${e.lastName}`.toLowerCase();
+          if (q && ![name,e.title,e.department,e.email,loc.country,loc.city].some(v=>v?.toLowerCase().includes(q))) return false;
+          if (status!=="all"  && e.status!==status)                     return false;
+          if (dept!=="all"    && e.department!==dept)                   return false;
+          if (country!=="all" && getAssigned(e).country!==country)      return false;
+          if (style!=="all"   && getAssigned(e).workStyle!==style)      return false;
+          return true;
+        }).sort((a,b) => {
+          const la=getAssigned(a), lb=getAssigned(b);
+          const v=(e,l)=>({name:`${e.lastName} ${e.firstName}`,status:e.status,title:e.title,department:e.department,email:e.email,manager:getManager(e,employeeMap)||"",country:l.country||"",city:l.city||"",workStyle:l.workStyle||""}[sortKey]||"");
+          return sortDir==="asc"?v(a,la).localeCompare(v(b,lb)):v(b,lb).localeCompare(v(a,la));
+        });
+      }, [search, status, dept, country, style, sortKey, sortDir, employees, employeeMap]);
+
+      const inp = { padding:"7px 12px", borderRadius:6, border:`1px solid ${t.inputBorder}`, background:t.inputBg, color:t.text1, fontSize:13, outline:"none", fontFamily:"inherit" };
+      const th  = { padding:"10px 16px", textAlign:"left", fontSize:11, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:t.text3, cursor:"pointer", whiteSpace:"nowrap", borderBottom:`2px solid ${t.border}`, userSelect:"none", background:t.bg };
+      const td  = { padding:"11px 16px", fontSize:13.5, color:t.text2, borderBottom:`1px solid ${t.border}`, whiteSpace:"nowrap" };
+
+      const SortIcon = ({ col }) => sortKey!==col
+        ? <span style={{opacity:0.2,marginLeft:4}}>↕</span>
+        : <span style={{marginLeft:4,color:t.accent}}>{sortDir==="asc"?"↑":"↓"}</span>;
+
+      const visibleCols = COLUMNS.filter(c => c.always || cols.has(c.key));
+
+      if (loading) return (
+        <div style={{ height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:t.bg, color:t.text2, fontFamily:"'DM Sans','Segoe UI',sans-serif", fontSize:14 }}>
+          Loading…
+        </div>
+      );
+
+      if (fetchErr) return (
+        <div style={{ height:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:t.bg, color:"#f87171", fontFamily:"'DM Sans','Segoe UI',sans-serif", fontSize:14 }}>
+          Failed to load employees.json
+        </div>
+      );
+
+      return (
+        <EmployeesCtx.Provider value={{ employees, employeeMap, cityCoords }}>
+          <div style={{ height:"100vh", overflow:"hidden", background:t.bg, fontFamily:"'DM Sans','Segoe UI',sans-serif", color:t.text1, display:"flex", flexDirection:"column" }}>
+            <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap'); *{box-sizing:border-box;}`}</style>
+
+            {/* Header */}
+            <div style={{ borderBottom:`1px solid ${t.border}`, padding:"20px 28px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0, background:t.bg }}>
+              <div>
+                <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase", color:t.accent, marginBottom:4 }}>People Directory</div>
+                <h1 style={{ margin:0, fontSize:22, fontWeight:600, color:t.text1, letterSpacing:"-0.02em" }}>Employee Overview</h1>
+              </div>
+              <div style={{ display:"flex", gap:16, alignItems:"center" }}>
+                <span style={{ fontSize:13, color:t.text3 }}>
+                  <span style={{ color:t.accent, fontWeight:700, fontFamily:"'DM Mono',monospace" }}>{filtered.length}</span> of {employees.length}
+                  <span style={{ margin:"0 10px", color:t.border }}>|</span>
+                  <span style={{ color:t.active, fontWeight:700, fontFamily:"'DM Mono',monospace" }}>{employees.filter(e=>e.status==="active").length}</span> active
+                </span>
+                <button onClick={() => setIsDark(d => !d)} style={{
+                  padding:"6px 12px", borderRadius:6, border:`1px solid ${t.border}`,
+                  background:"transparent", color:t.text2, fontSize:13, cursor:"pointer",
+                  fontFamily:"inherit", display:"flex", alignItems:"center", gap:5,
+                }}>
+                  {isDark ? "☀ Light" : "☾ Dark"}
+                </button>
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <div style={{ padding:"0 28px", borderBottom:`1px solid ${t.border}`, display:"flex", flexShrink:0, background:t.bg }}>
+              {TABS.map(tab_ => (
+                <button key={tab_.key} onClick={() => setTab(tab_.key)} style={{
+                  padding:"12px 22px", fontSize:13, fontWeight:600, fontFamily:"inherit",
+                  border:"none", borderBottom:tab===tab_.key?`2px solid ${t.accent}`:"2px solid transparent",
+                  background:"transparent", color:tab===tab_.key?t.accent:t.text3,
+                  cursor:"pointer", letterSpacing:"0.03em", transition:"color 0.15s", marginBottom:-1,
+                }}>{tab_.label}</button>
+              ))}
+            </div>
+
+            {tab==="map" && <MapView onSelectEmployee={emp=>setSelected(emp)} t={t} />}
+            {tab==="org" && <OrgView onSelectEmployee={emp=>setSelected(emp)} t={t} />}
+
+            {tab==="list" && <>
+              <div style={{ padding:"14px 28px", borderBottom:`1px solid ${t.border}`, display:"flex", gap:10, alignItems:"center", flexWrap:"wrap", flexShrink:0, background:t.bg }}>
+                <input style={{...inp,width:210}} placeholder="Search employees…" value={search} onChange={e=>setSearch(e.target.value)} />
+                {[
+                  {label:"Status",     val:status,  set:setStatus,  opts:["all","active","inactive"]},
+                  {label:"Department", val:dept,    set:setDept,    opts:["all",...DEPARTMENTS]},
+                  {label:"Country",    val:country, set:setCountry, opts:["all",...COUNTRIES]},
+                  {label:"Work Style", val:style,   set:setStyle,   opts:["all","office","remote"]},
+                ].map(({label,val,set,opts}) => (
+                  <select key={label} value={val} onChange={e=>set(e.target.value)} style={{...inp,cursor:"pointer"}}>
+                    {opts.map(o=><option key={o} value={o}>{o==="all"?`All ${label}s`:o}</option>)}
+                  </select>
+                ))}
+                {!isDefault && (
+                  <button onClick={resetAll} style={{ padding:"7px 14px", borderRadius:6, border:`1px solid ${t.accentBorder}`, background:t.accentBg, color:t.accent, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
+                    ↺ Default View
+                  </button>
+                )}
+                <div style={{position:"relative",marginLeft:"auto"}}>
+                  <button onClick={()=>setColOpen(p=>!p)} style={{ padding:"7px 14px", borderRadius:6, border:`1px solid ${t.border}`, background:colOpen?t.surface:"transparent", color:t.text2, fontSize:13, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:6 }}>
+                    ⊞ Columns
+                  </button>
+                  {colOpen && (
+                    <div style={{ position:"absolute", right:0, top:"calc(100% + 8px)", zIndex:100, background:t.surface, border:`1px solid ${t.border}`, borderRadius:8, padding:"12px 16px", minWidth:180, boxShadow:"0 8px 32px rgba(0,0,0,0.15)" }}>
+                      <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase", color:t.text3, marginBottom:10 }}>Show / Hide</div>
+                      {COLUMNS.filter(c=>!c.always).map(col=>(
+                        <label key={col.key} style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 0", cursor:"pointer", fontSize:13, color:t.text1 }}>
+                          <input type="checkbox" checked={cols.has(col.key)} onChange={()=>toggleCol(col.key)} style={{accentColor:t.accent}} />
+                          {col.label}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ padding:"0 28px 40px", overflowX:"auto", overflowY:"auto", flex:1 }}>
+                <table style={{ width:"100%", borderCollapse:"collapse", marginTop:8 }}>
+                  <thead>
+                    <tr>
+                      {visibleCols.map(col=>(
+                        <th key={col.key} style={th} onClick={()=>handleSort(col.key)}>
+                          {col.label}<SortIcon col={col.key} />
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.length===0 ? (
+                      <tr><td colSpan={99} style={{...td,textAlign:"center",color:t.text3,padding:"48px 0",fontStyle:"italic"}}>No employees match the current filters</td></tr>
+                    ) : filtered.map((emp,i) => {
+                      const loc = getAssigned(emp);
+                      const sel = selected?.id===emp.id;
+                      return (
+                        <tr key={emp.id}
+                          onClick={()=>setSelected(sel?null:emp)}
+                          style={{ background:sel?t.selectedRow:i%2===0?t.bg:t.bgAlt, cursor:"pointer", transition:"background 0.12s" }}
+                          onMouseEnter={e=>{if(!sel)e.currentTarget.style.background=t.surfaceHover;}}
+                          onMouseLeave={e=>{if(!sel)e.currentTarget.style.background=i%2===0?t.bg:t.bgAlt;}}
+                        >
+                          {visibleCols.map(col=>{
+                            let content;
+                            switch(col.key){
+                              case "name":       content=(<div><div style={{fontWeight:600,color:t.text1,fontSize:14}}>{emp.firstName} {emp.lastName}</div><div style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:t.text3,marginTop:2}}>{emp.id}</div></div>); break;
+                              case "status":     content=<StatusBadge status={emp.status} t={t} />; break;
+                              case "title":      content=emp.title; break;
+                              case "department": content=<span style={{fontWeight:500,color:t.text1}}>{emp.department}</span>; break;
+                              case "email":      content=<span style={{fontFamily:"'DM Mono',monospace",fontSize:12}}>{emp.email}</span>; break;
+                              case "manager":    content=<span style={{color:t.text2}}>{getManager(emp,employeeMap)||"—"}</span>; break;
+                              case "country":    content=loc.country||"—"; break;
+                              case "city":       content=loc.city||"—"; break;
+                              case "workStyle":  content=loc.workStyle?<WorkStyleBadge ws={loc.workStyle}/>:"—"; break;
+                              default:           content="—";
+                            }
+                            return <td key={col.key} style={td}>{content}</td>;
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>}
+
+            <DetailDrawer emp={selected} onClose={()=>setSelected(null)} t={t} />
+          </div>
+        </EmployeesCtx.Provider>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<EmployeeDirectory />);
+  </script>
+</body>
+</html>

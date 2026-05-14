@@ -147,7 +147,6 @@
       const deptColor = DEPT_COLORS[emp.department] || "#64748b";
       const reports   = employees.filter(e => e.managerId === emp.id);
       return (
-        <>
           <div style={{ position: "fixed", top: 12, right: 12, bottom: 12, width: 340, background: t.surface, border: `1px solid ${t.border}`, borderRadius: 14, zIndex: 2000, overflowY: "auto", display: "flex", flexDirection: "column", boxShadow: "0 24px 64px rgba(0,0,0,0.45), 0 4px 16px rgba(0,0,0,0.25)" }}>
             <div style={{ height: 4, background: deptColor, flexShrink: 0 }} />
             <div style={{ padding: "24px 24px 20px", borderBottom: `1px solid ${t.border}` }}>
